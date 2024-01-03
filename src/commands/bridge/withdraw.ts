@@ -96,7 +96,6 @@ export const handler = async (options: WithdrawOptions) => {
     const fromChainLabel = fromChain && !options.rpc ? fromChain.name : options.rpc ?? "Unknown chain";
     const toChain = l2Chains.find((e) => e.network === options.chain)?.l1Chain;
     const toChainLabel = toChain && !options.l1Rpc ? toChain.name : options.l1Rpc ?? "Unknown chain";
-    const token = options.token ?? ETH_TOKEN.l1Address;
 
     Logger.info("\nWithdraw:");
     Logger.info(` From: ${getAddressFromPrivateKey(answers.privateKey)} (${fromChainLabel})`);
@@ -111,7 +110,7 @@ export const handler = async (options: WithdrawOptions) => {
 
     const withdrawHandle = await senderWallet.withdraw({
       to: options.recipient,
-      token: token,
+      token: ETH_TOKEN.l1Address,
       amount: decimalToBigNumber(options.amount),
     });
     Logger.info("\nWithdraw sent:");
@@ -140,6 +139,5 @@ Program.command("withdraw")
   .addOption(l1RpcUrlOption)
   .addOption(l2RpcUrlOption)
   .addOption(privateKeyOption)
-  .addOption(tokenOption)
   .addOption(zeekOption)
   .action(handler);
