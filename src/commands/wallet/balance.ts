@@ -1,7 +1,7 @@
 import inquirer from "inquirer";
 
 import Program from "./command.js";
-import { accountOption, chainOption, l2RpcUrlOption, erc20AddressOption, zeekOption } from "../../common/options.js";
+import { accountOption, chainOption, l2RpcUrlOption, erc20AddressOption, zeekOption, nativeErc20Option } from "../../common/options.js";
 import { l2Chains } from "../../data/chains.js";
 import { bigNumberToDecimal } from "../../utils/formatters.js";
 import { getL2Provider, optionNameToParam } from "../../utils/helpers.js";
@@ -9,7 +9,8 @@ import Logger from "../../utils/logger.js";
 import { isAddress } from "../../utils/validators.js";
 import zeek from "../../utils/zeek.js";
 import { utils } from 'zksync-web3';
-
+import path from "path";
+import * as fs from "fs";
 import type { DefaultOptions } from "../../common/options.js";
 
 type BalanceOptions = DefaultOptions & {
@@ -17,6 +18,7 @@ type BalanceOptions = DefaultOptions & {
   rpc?: string;
   address?: string;
   erc20Address?: string;
+  nativeErc20?: boolean;
 };
 
 export const handler = async (options: BalanceOptions) => {
@@ -43,6 +45,12 @@ export const handler = async (options: BalanceOptions) => {
           required: true,
           validate: (input: string) => isAddress(input),
         },
+        {
+          message: nativeErc20Option.description,
+          name: optionNameToParam(nativeErc20Option.long!),
+          type: "confirm",
+          required: true,
+        }
       ],
       options
     );
@@ -76,7 +84,15 @@ export const handler = async (options: BalanceOptions) => {
       Logger.info(`\n${selectedChain?.name} Balance: ${balance} ${tokenName}`);
     } else {
       const balance = await l2Provider.getBalance(options.address ?? "Unknown account");
-      Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ETH`);
+
+      // TODO: We should find a better way to do this without relying on a path.
+      if (options.nativeErc20) {
+        const testConfigPath = path.join(process.env.ZKSYNC_HOME as string, "etc/tokens");
+        const nativeERC20Token = JSON.parse(fs.readFileSync(`${testConfigPath}/native_erc20.json`, { encoding: "utf-8" }));
+        Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ${nativeERC20Token.symbol}`)
+      } else {
+        Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ETH`);
+      }
     }
 
 
