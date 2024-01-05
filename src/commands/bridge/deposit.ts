@@ -97,20 +97,21 @@ export const handler = async (options: DepositOptions) => {
     const toChain = l2Chains.find((e) => e.network === options.chain);
     const toChainLabel = toChain && !options.rpc ? toChain.name : options.rpc ?? "Unknown chain";
     const approveERC20 = options.token !== ETH_TOKEN.l1Address;
-
+    const nativeERC20Address = process.env.NATIVE_ERC20_ADDRESS!;
+    const nativeERC20Name = process.env.NATIVE_ERC20_NAME;
+    let tokenName = (nativeERC20Address && nativeERC20Name) ? nativeERC20Name : 'ETH'
+  
     Logger.info("\nDeposit:");
     Logger.info(` From: ${getAddressFromPrivateKey(answers.privateKey)} (${fromChainLabel})`);
     Logger.info(` To: ${options.recipient} (${toChainLabel})`);
-    Logger.info(` Amount: ${bigNumberToDecimal(decimalToBigNumber(options.amount))} ETH`);
+    Logger.info(` Amount: ${bigNumberToDecimal(decimalToBigNumber(options.amount))} ${tokenName}`);
 
     Logger.info("\nSending deposit transaction...");
 
     const l1Provider = getL1Provider(options.l1Rpc ?? fromChain!.rpcUrl);
     const l2Provider = getL2Provider(options.rpc ?? toChain!.rpcUrl);
     const senderWallet = getL2Wallet(options.privateKey, l2Provider, l1Provider);
-
-    const nativeERC20Address = process.env.NATIVE_ERC20_ADDRESS!;
-
+  
     // Change token address when depositing.
     const depositHandle = await senderWallet.deposit({
       to: options.recipient,
@@ -126,7 +127,8 @@ export const handler = async (options: DepositOptions) => {
     }
 
     const senderBalance = await l1Provider.getBalance(senderWallet.address);
-    Logger.info(`\nSender L1 balance after transaction: ${bigNumberToDecimal(senderBalance)} ETH`);
+    
+    Logger.info(`\nSender L1 balance after transaction: ${bigNumberToDecimal(senderBalance)} ${tokenName}`);
 
     if (options.zeek) {
       zeek();
