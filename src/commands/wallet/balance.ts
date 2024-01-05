@@ -79,7 +79,7 @@ export const handler = async (options: BalanceOptions) => {
       // Check if the Native ERC20 related environment variables are set.
       let nativeErc20Address = process.env.NATIVE_ERC20_ADDRESS;
       let nativeErc20Symbol = process.env.NATIVE_ERC20_SYMBOL;
-      if (nativeErc20Address && nativeErc20Symbol) {
+      if (nativeErc20Address && nativeErc20Symbol && (selectedChain?.network == "dockerized-node")) {
         Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ${nativeErc20Symbol}`)
       } else {
         Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ETH`);
