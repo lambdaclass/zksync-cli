@@ -85,6 +85,10 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
     const toChain = l2Chains.find((e) => e.network === options.chain)?.l1Chain;
     const toChainLabel = toChain && !options.l1Rpc ? toChain.name : options.l1Rpc ?? "Unknown chain";
 
+    const nativeERC20Address = process.env.NATIVE_ERC20_ADDRESS!;
+    const nativeERC20Name = process.env.NATIVE_ERC20_NAME;
+    let tokenName = (nativeERC20Address && nativeERC20Name) ? nativeERC20Name : 'ETH'
+
     Logger.info("\nWithdraw finalize:");
     Logger.info(` From chain: ${fromChainLabel}`);
     Logger.info(` To chain: ${toChainLabel}`);
@@ -123,7 +127,7 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
     Logger.info(` Finalization transaction was mined in block ${receipt.blockNumber}`);
 
     const senderBalance = await l1Provider.getBalance(senderWallet.address);
-    Logger.info(`\nSender L1 balance after transaction: ${bigNumberToDecimal(senderBalance)} ETH`);
+    Logger.info(`\nSender L1 balance after transaction: ${bigNumberToDecimal(senderBalance)} ${tokenName}`);
 
     if (options.zeek) {
       zeek();

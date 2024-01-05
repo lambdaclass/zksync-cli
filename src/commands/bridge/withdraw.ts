@@ -97,10 +97,14 @@ export const handler = async (options: WithdrawOptions) => {
     const toChain = l2Chains.find((e) => e.network === options.chain)?.l1Chain;
     const toChainLabel = toChain && !options.l1Rpc ? toChain.name : options.l1Rpc ?? "Unknown chain";
 
+    const nativeERC20Address = process.env.NATIVE_ERC20_ADDRESS!;
+    const nativeERC20Name = process.env.NATIVE_ERC20_NAME;
+    let tokenName = (nativeERC20Address && nativeERC20Name) ? nativeERC20Name : 'ETH'
+
     Logger.info("\nWithdraw:");
     Logger.info(` From: ${getAddressFromPrivateKey(answers.privateKey)} (${fromChainLabel})`);
     Logger.info(` To: ${options.recipient} (${toChainLabel})`);
-    Logger.info(` Amount: ${bigNumberToDecimal(decimalToBigNumber(options.amount))} ETH`);
+    Logger.info(` Amount: ${bigNumberToDecimal(decimalToBigNumber(options.amount))} ${tokenName}`);
 
     Logger.info("\nSending withdraw transaction...");
 
@@ -120,7 +124,7 @@ export const handler = async (options: WithdrawOptions) => {
     }
 
     const senderBalance = await l2Provider.getBalance(senderWallet.address);
-    Logger.info(`\nSender L2 balance after transaction: ${bigNumberToDecimal(senderBalance)} ETH`);
+    Logger.info(`\nSender L2 balance after transaction: ${bigNumberToDecimal(senderBalance)} ${tokenName}`);
 
     if (options.zeek) {
       zeek();
