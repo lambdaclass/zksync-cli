@@ -115,11 +115,11 @@ export const handler = async (options: DepositOptions) => {
     // Change token address when depositing.
     const depositHandle = await senderWallet.deposit({
       to: options.recipient,
-      token: nativeERC20Address,
+      token: options.token ?? nativeERC20Address,
       approveERC20: true,
       amount: decimalToBigNumber(options.amount),
       refundRecipient: options.recipient,
-    });
+    }, nativeERC20Address);
     Logger.info("\nDeposit sent:");
     Logger.info(` Transaction hash: ${depositHandle.hash}`);
     if (fromChain?.explorerUrl) {
