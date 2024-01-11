@@ -1,20 +1,21 @@
 import inquirer from "inquirer";
 
 import Program from "./command.js";
-import { accountOption, chainOption, l2RpcUrlOption, zeekOption } from "../../common/options.js";
+import { accountOption, chainOption, l2RpcUrlOption, erc20AddressOption, zeekOption } from "../../common/options.js";
 import { l2Chains } from "../../data/chains.js";
 import { bigNumberToDecimal } from "../../utils/formatters.js";
 import { getL2Provider, optionNameToParam } from "../../utils/helpers.js";
 import Logger from "../../utils/logger.js";
 import { isAddress } from "../../utils/validators.js";
 import zeek from "../../utils/zeek.js";
-
+import { utils } from 'zksync-web3';
 import type { DefaultOptions } from "../../common/options.js";
 
 type BalanceOptions = DefaultOptions & {
   chain?: string;
-  l2RpcUrl?: string;
+  rpc?: string;
   address?: string;
+  erc20Address?: string;
 };
 
 export const handler = async (options: BalanceOptions) => {
@@ -28,7 +29,7 @@ export const handler = async (options: BalanceOptions) => {
           choices: l2Chains.map((e) => ({ name: e.name, value: e.network })),
           required: true,
           when(answers: BalanceOptions) {
-            if (answers.l2RpcUrl) {
+            if (answers.rpc) {
               return false;
             }
             return true;
@@ -51,10 +52,40 @@ export const handler = async (options: BalanceOptions) => {
     };
 
     const selectedChain = l2Chains.find((e) => e.network === options.chain);
-    const l2Provider = getL2Provider(options.l2RpcUrl ?? selectedChain!.rpcUrl);
-    const balance = await l2Provider.getBalance(options.address!);
+    const l2Provider = getL2Provider(options.rpc ?? selectedChain!.rpcUrl);
+    if (options.erc20Address) {
+      const tokenNameEncodedData = utils.IERC20.encodeFunctionData("name()");
+      const balanceOfEncodedData = utils.IERC20.encodeFunctionData("balanceOf(address)", [options.address!]);
 
-    Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ETH`);
+      const tokenNameTransactionReq = {
+          to: options.erc20Address!,
+          data: tokenNameEncodedData
+      };
+
+      const balanceOfTransactionReq = {
+        to: options.erc20Address!,
+        data: balanceOfEncodedData
+    };
+  
+      const tokenNameResponse = await l2Provider.call(tokenNameTransactionReq);
+      const balanceResponse = await l2Provider.call(balanceOfTransactionReq);
+
+      const tokenName = utils.IERC20.decodeFunctionResult("name()", tokenNameResponse);
+      const balance = utils.IERC20.decodeFunctionResult("balanceOf(address)", balanceResponse);
+      Logger.info(`\n${selectedChain?.name} Balance: ${balance} ${tokenName}`);
+    } else {
+      const balance = await l2Provider.getBalance(options.address ?? "Unknown account");
+
+      // Check if the Native ERC20 related environment variables are set.
+      let nativeErc20Address = process.env.NATIVE_ERC20_ADDRESS;
+      let nativeErc20Name = process.env.NATIVE_ERC20_NAME;
+      if (nativeErc20Address && nativeErc20Name && (selectedChain?.network == "dockerized-node")) {
+        Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ${nativeErc20Name}`)
+      } else {
+        Logger.info(`\n${selectedChain?.name} Balance: ${bigNumberToDecimal(balance)} ETH`);
+      }
+    }
+
 
     if (options.zeek) {
       zeek();
@@ -70,5 +101,6 @@ Program.command("balance")
   .addOption(chainOption)
   .addOption(l2RpcUrlOption)
   .addOption(accountOption)
+  .addOption(erc20AddressOption)
   .addOption(zeekOption)
   .action(handler);

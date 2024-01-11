@@ -13,43 +13,74 @@ const mainnet: Chain = {
   rpcUrl: "https://cloudflare-eth.com",
   explorerUrl: "https://etherscan.io",
 };
+const sepolia: Chain = {
+  id: 11155111,
+  name: "Ethereum Sepolia Testnet",
+  network: "sepolia",
+  rpcUrl: "https://rpc.ankr.com/eth_sepolia",
+  explorerUrl: "https://sepolia.etherscan.io",
+};
 const goerli: Chain = {
   id: 5,
-  name: "Ethereum Goerli",
+  name: "Ethereum Goerli Testnet",
   network: "goerli",
   rpcUrl: "https://rpc.ankr.com/eth_goerli",
   explorerUrl: "https://goerli.etherscan.io",
 };
 
-type L2Chain = Chain & { l1Chain?: Chain };
+export type L2Chain = Chain & { l1Chain?: Chain; verificationApiUrl?: string };
 export const l2Chains: L2Chain[] = [
   {
-    id: 280,
-    name: "zkSync Era Testnet",
-    network: "era-testnet",
-    rpcUrl: "https://testnet.era.zksync.dev",
-    explorerUrl: "https://goerli.explorer.zksync.io",
-    l1Chain: goerli,
+    id: 300,
+    name: "zkSync Sepolia Testnet",
+    network: "zksync-sepolia",
+    rpcUrl: "https://sepolia.era.zksync.dev",
+    explorerUrl: "https://sepolia.explorer.zksync.io",
+    verificationApiUrl: "https://explorer.sepolia.era.zksync.dev",
+    l1Chain: sepolia,
   },
   {
     id: 324,
-    name: "zkSync Era Mainnet",
-    network: "era-mainnet",
+    name: "zkSync Mainnet",
+    network: "zksync-mainnet",
     rpcUrl: "https://mainnet.era.zksync.io",
     explorerUrl: "https://explorer.zksync.io",
+    verificationApiUrl: "https://zksync2-mainnet-explorer.zksync.io",
     l1Chain: mainnet,
   },
   {
+    // deprecated network
+    id: 280,
+    name: "zkSync Goerli Testnet",
+    network: "zksync-goerli",
+    rpcUrl: "https://testnet.era.zksync.dev",
+    explorerUrl: "https://goerli.explorer.zksync.io",
+    verificationApiUrl: "https://zksync2-testnet-explorer.zksync.dev",
+    l1Chain: goerli,
+  },
+  {
     id: 260,
-    name: "Local In-memory node",
-    network: "local-in-memory",
+    name: "In-memory local node",
+    network: "in-memory-node",
     rpcUrl: "http://127.0.0.1:8011",
   },
   {
     id: 270,
-    name: "Local Dockerized node",
-    network: "local-dockerized",
+    name: "Dockerized local node",
+    network: "dockerized-node",
     rpcUrl: "http://127.0.0.1:3050",
+    l1Chain: {
+      id: 9,
+      name: "L1 Local",
+      network: "l1-local",
+      rpcUrl: "http://127.0.0.1:8545",
+    },
+  },
+  {
+    id: 9,
+    name: "Local GETH Node",
+    network: "local-geth",
+    rpcUrl: "http://127.0.0.1:8545",
     l1Chain: {
       id: 9,
       name: "L1 Local",

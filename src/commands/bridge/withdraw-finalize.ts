@@ -2,7 +2,13 @@ import { Option } from "commander";
 import inquirer from "inquirer";
 
 import Program from "./command.js";
-import { chainOption, l1RpcUrlOption, l2RpcUrlOption, privateKeyOption, zeekOption } from "../../common/options.js";
+import {
+  chainWithL1Option,
+  l1RpcUrlOption,
+  l2RpcUrlOption,
+  privateKeyOption,
+  zeekOption,
+} from "../../common/options.js";
 import { l2Chains } from "../../data/chains.js";
 import { bigNumberToDecimal } from "../../utils/formatters.js";
 import {
@@ -37,13 +43,13 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
     const answers: WithdrawFinalizeOptions = await inquirer.prompt(
       [
         {
-          message: chainOption.description,
-          name: optionNameToParam(chainOption.long!),
+          message: chainWithL1Option.description,
+          name: optionNameToParam(chainWithL1Option.long!),
           type: "list",
           choices: l2Chains.filter((e) => e.l1Chain).map((e) => ({ name: e.name, value: e.network })),
           required: true,
           when(answers: WithdrawFinalizeOptions) {
-            if (answers.l1RpcUrl && answers.l2RpcUrl) {
+            if (answers.l1Rpc && answers.rpc) {
               return false;
             }
             return true;
@@ -75,9 +81,13 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
     Logger.debug(`Final withdraw-finalize options: ${JSON.stringify({ ...options, privateKey: "<hidden>" }, null, 2)}`);
 
     const fromChain = l2Chains.find((e) => e.network === options.chain);
-    const fromChainLabel = fromChain && !options.l2RpcUrl ? fromChain.name : options.l2RpcUrl ?? "Unknown chain";
+    const fromChainLabel = fromChain && !options.rpc ? fromChain.name : options.rpc ?? "Unknown chain";
     const toChain = l2Chains.find((e) => e.network === options.chain)?.l1Chain;
-    const toChainLabel = toChain && !options.l1RpcUrl ? toChain.name : options.l1RpcUrl ?? "Unknown chain";
+    const toChainLabel = toChain && !options.l1Rpc ? toChain.name : options.l1Rpc ?? "Unknown chain";
+
+    const nativeERC20Address = process.env.NATIVE_ERC20_ADDRESS!;
+    const nativeERC20Name = process.env.NATIVE_ERC20_NAME;
+    let tokenName = (nativeERC20Address && nativeERC20Name) ? nativeERC20Name : 'ETH'
 
     Logger.info("\nWithdraw finalize:");
     Logger.info(` From chain: ${fromChainLabel}`);
@@ -85,8 +95,8 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
     Logger.info(` Withdrawal transaction (L2): ${options.hash}`);
     Logger.info(` Finalizer address (L1): ${getAddressFromPrivateKey(answers.privateKey)}`);
 
-    const l1Provider = getL1Provider(options.l1RpcUrl ?? toChain!.rpcUrl);
-    const l2Provider = getL2Provider(options.l2RpcUrl ?? fromChain!.rpcUrl);
+    const l1Provider = getL1Provider(options.l1Rpc ?? toChain!.rpcUrl);
+    const l2Provider = getL2Provider(options.rpc ?? fromChain!.rpcUrl);
     const senderWallet = getL2Wallet(options.privateKey, l2Provider, l1Provider);
 
     Logger.info("\nChecking status of the transaction...");
@@ -117,7 +127,7 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
     Logger.info(` Finalization transaction was mined in block ${receipt.blockNumber}`);
 
     const senderBalance = await l1Provider.getBalance(senderWallet.address);
-    Logger.info(`\nSender L1 balance after transaction: ${bigNumberToDecimal(senderBalance)} ETH`);
+    Logger.info(`\nSender L1 balance after transaction: ${bigNumberToDecimal(senderBalance)} ${tokenName}`);
 
     if (options.zeek) {
       zeek();
@@ -131,7 +141,7 @@ export const handler = async (options: WithdrawFinalizeOptions) => {
 Program.command("withdraw-finalize")
   .description("Finalize withdrawal of funds")
   .addOption(transactionHashOption)
-  .addOption(chainOption)
+  .addOption(chainWithL1Option)
   .addOption(l1RpcUrlOption)
   .addOption(l2RpcUrlOption)
   .addOption(privateKeyOption)
