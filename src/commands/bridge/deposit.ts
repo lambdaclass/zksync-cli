@@ -26,6 +26,7 @@ import { isDecimalAmount, isAddress, isPrivateKey } from "../../utils/validators
 import zeek from "../../utils/zeek.js";
 
 import type { DefaultTransferOptions } from "../../common/options.js";
+import { BigNumber } from "ethers";
 
 const amountOption = amountOptionCreate("deposit");
 const recipientOption = recipientOptionCreate("L2");
