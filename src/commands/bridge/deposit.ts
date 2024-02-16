@@ -26,6 +26,7 @@ import { isDecimalAmount, isAddress, isPrivateKey } from "../../utils/validators
 import zeek from "../../utils/zeek.js";
 
 import type { DefaultTransferOptions } from "../../common/options.js";
+import { ETH_ADDRESS } from "zksync-web3/build/src/utils.js";
 
 const amountOption = amountOptionCreate("deposit");
 const recipientOption = recipientOptionCreate("L2");
@@ -100,6 +101,7 @@ export const handler = async (options: DepositOptions) => {
     const nativeERC20Address = process.env.NATIVE_ERC20_ADDRESS!;
     const nativeERC20Name = process.env.NATIVE_ERC20_NAME;
     let tokenName = (nativeERC20Address && nativeERC20Name) ? nativeERC20Name : 'ETH'
+    let tokenAddress = (nativeERC20Address) ? nativeERC20Address : ETH_ADDRESS;
   
     Logger.info("\nDeposit:");
     Logger.info(` From: ${getAddressFromPrivateKey(answers.privateKey)} (${fromChainLabel})`);
@@ -115,11 +117,11 @@ export const handler = async (options: DepositOptions) => {
     // Change token address when depositing.
     const depositHandle = await senderWallet.deposit({
       to: options.recipient,
-      token: options.token ?? nativeERC20Address,
+      token: options.token ?? tokenAddress,
       approveERC20: true,
       amount: decimalToBigNumber(options.amount),
       refundRecipient: options.recipient,
-    }, nativeERC20Address);
+    }, nativeERC20Address ? nativeERC20Address : undefined);
     Logger.info("\nDeposit sent:");
     Logger.info(` Transaction hash: ${depositHandle.hash}`);
     if (fromChain?.explorerUrl) {
